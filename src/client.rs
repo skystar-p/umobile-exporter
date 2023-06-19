@@ -26,6 +26,11 @@ pub struct Usage {
     pub sms_used: Option<isize>,
 }
 
+#[derive(Default, Debug)]
+pub struct Bill {
+    pub usage: isize,
+}
+
 impl UmobileClient {
     pub async fn new(id: impl AsRef<str>, password: impl AsRef<str>) -> Result<Self, ClientError> {
         let id = id.as_ref().to_string();
@@ -58,7 +63,7 @@ impl UmobileClient {
         Ok(Self { client })
     }
 
-    pub async fn get_realtime_usage(self) -> Result<Usage, ClientError> {
+    pub async fn get_realtime_usage(&self) -> Result<Usage, ClientError> {
         let html = self
             .client
             .get("https://www.uplusumobile.com/my/usage/realTime")
@@ -141,5 +146,47 @@ impl UmobileClient {
         }
 
         return Ok(usage);
+    }
+
+    pub async fn get_realtime_bill(&self) -> Result<Bill, ClientError> {
+        let html = self
+            .client
+            .get("https://www.uplusumobile.com/my/usage/bill/detail-info")
+            .header(USER_AGENT, USER_AGENT_STR)
+            .send()
+            .await
+            .map_err(|_| ClientError::UsageFetchError)?
+            .text()
+            .await
+            .map_err(|_| ClientError::UsageFetchError)?;
+
+        let doc = Html::parse_document(&html);
+
+        let item_box_sel = Selector::parse("div.info-area").unwrap();
+        let detail_sel = Selector::parse("div.detail").unwrap();
+
+        let item_box = doc.select(&item_box_sel).next();
+        let item_box = if let Some(b) = item_box {
+            b
+        } else {
+            return Err(ClientError::BillFetchError);
+        };
+
+        let detail = item_box.select(&detail_sel).next();
+        let detail = if let Some(d) = detail {
+            d
+        } else {
+            return Err(ClientError::BillFetchError);
+        };
+
+        let usage: String = detail.text().collect();
+        let usage = usage.replace("원", "").replace(",", "");
+
+        let usage = usage
+            .trim()
+            .parse::<isize>()
+            .map_err(|_| ClientError::BillFetchError)?;
+
+        Ok(Bill { usage })
     }
 }

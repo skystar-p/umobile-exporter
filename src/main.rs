@@ -16,7 +16,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let usage = client.get_realtime_usage().await?;
 
-    println!("{:#?}", usage);
+    let bill_usage = client.get_realtime_bill().await?;
+
+    println!("usage: {:?}", usage);
+    println!("bill: {:?}", bill_usage);
 
     Ok(())
 }
