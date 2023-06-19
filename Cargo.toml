@@ -1,5 +1,5 @@
 [package]
-name = "umobile-fetch"
+name = "umobile-exporter"
 version = "0.1.0"
 edition = "2021"
 
