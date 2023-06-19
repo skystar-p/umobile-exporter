@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
+axum = "0.6.18"
 ctrlc = { version = "3.4.0", features = ["termination"] }
 envy = "0.4.2"
 reqwest = { version = "0.11.18", features = ["multipart", "cookies"] }

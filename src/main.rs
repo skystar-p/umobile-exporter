@@ -1,16 +1,34 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use serde::Deserialize;
 use stopper::Stopper;
+use tokio::sync::RwLock;
 
 mod client;
+mod handler;
 
 #[derive(Clone, Debug, Deserialize)]
-struct Config {
+pub struct Config {
     username: String,
     password: String,
 
+    #[serde(default = "default_interval")]
     interval: u64,
+    #[serde(default = "default_listen_port")]
+    listen_port: u16,
+}
+
+const fn default_interval() -> u64 {
+    600
+}
+
+const fn default_listen_port() -> u16 {
+    8080
+}
+
+pub struct State {
+    usage: client::Usage,
+    bill: client::Bill,
 }
 
 #[tokio::main]
@@ -28,12 +46,25 @@ async fn main() -> anyhow::Result<()> {
         }
     })?;
 
-    tokio::spawn(fetch_loop(stopper.clone(), config.clone()));
+    let state = Arc::new(tokio::sync::RwLock::new(State {
+        usage: client::Usage::default(),
+        bill: client::Bill::default(),
+    }));
+
+    tokio::spawn(fetch_loop(stopper.clone(), config.clone(), state.clone()));
+
+    let server = handler::run_http_server(config.clone(), state.clone());
+
+    stopper.stop_future(server).await;
 
     Ok(())
 }
 
-async fn fetch_loop(stopper: Stopper, config: Config) -> anyhow::Result<()> {
+async fn fetch_loop(
+    stopper: Stopper,
+    config: Config,
+    state: Arc<RwLock<State>>,
+) -> anyhow::Result<()> {
     loop {
         if stopper.is_stopped() {
             break;
@@ -62,6 +93,12 @@ async fn fetch_loop(stopper: Stopper, config: Config) -> anyhow::Result<()> {
                     break;
                 }
             };
+
+            let mut state = state.write().await;
+            state.usage.mobile_data_used = usage.mobile_data_used;
+            state.usage.call_used = usage.call_used;
+            state.usage.sms_used = usage.sms_used;
+            state.bill.usage = bill.usage;
         }
     }
 

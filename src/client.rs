@@ -28,7 +28,7 @@ pub struct Usage {
 
 #[derive(Default, Debug)]
 pub struct Bill {
-    pub usage: isize,
+    pub usage: Option<isize>,
 }
 
 impl UmobileClient {
@@ -187,6 +187,6 @@ impl UmobileClient {
             .parse::<isize>()
             .map_err(|_| ClientError::BillFetchError)?;
 
-        Ok(Bill { usage })
+        Ok(Bill { usage: Some(usage) })
     }
 }
