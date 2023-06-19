@@ -55,6 +55,7 @@ async fn main() -> anyhow::Result<()> {
 
     let server = handler::run_http_server(config.clone(), state.clone());
 
+    tracing::info!("Listening on port {}", config.listen_port);
     stopper.stop_future(server).await;
 
     Ok(())
@@ -71,6 +72,7 @@ async fn fetch_loop(
         }
 
         let client = client::UmobileClient::new(&config.username, &config.password).await?;
+        tracing::info!("Logged in");
         let mut interval = tokio::time::interval(Duration::from_secs(config.interval));
 
         loop {
