@@ -22,15 +22,12 @@ const USER_AGENT_STR: &str =
 #[derive(Default, Debug)]
 pub struct Usage {
     pub mobile_data_used: Option<f64>,
-    pub call_used: Option<f64>,
-    pub sms_used: Option<f64>,
+    pub call_used: Option<isize>,
+    pub sms_used: Option<isize>,
 }
 
 impl UmobileClient {
-    pub async fn new(
-        id: impl AsRef<str>,
-        password: impl AsRef<str>,
-    ) -> Result<Self, ClientError> {
+    pub async fn new(id: impl AsRef<str>, password: impl AsRef<str>) -> Result<Self, ClientError> {
         let id = id.as_ref().to_string();
         let password = password.as_ref().to_string();
 
@@ -65,6 +62,7 @@ impl UmobileClient {
         let html = self
             .client
             .get("https://www.uplusumobile.com/my/usage/realTime")
+            .header(USER_AGENT, USER_AGENT_STR)
             .send()
             .await
             .map_err(|_| ClientError::UsageFetchError)?
@@ -75,7 +73,7 @@ impl UmobileClient {
         let doc = Html::parse_document(&html);
 
         let item_box_sel = Selector::parse("section.box-usage-wrap").unwrap();
-        let title_sel = Selector::parse("strong.usage-tit").unwrap();
+        let title_sel = Selector::parse("strong.usage-title").unwrap();
         let usage_box_sel = Selector::parse("div.usage-amount").unwrap();
 
         let mut usage = Usage::default();
@@ -120,7 +118,7 @@ impl UmobileClient {
 
                 let used = used
                     .trim()
-                    .parse::<f64>()
+                    .parse::<isize>()
                     .map_err(|_| ClientError::UsageFetchError)?;
 
                 usage.call_used = Some(used);
@@ -133,10 +131,10 @@ impl UmobileClient {
 
                 let used = used
                     .trim()
-                    .parse::<f64>()
+                    .parse::<isize>()
                     .map_err(|_| ClientError::UsageFetchError)?;
 
-                usage.call_used = Some(used);
+                usage.sms_used = Some(used);
             } else {
                 continue;
             }
