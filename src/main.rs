@@ -71,10 +71,10 @@ async fn fetch_loop(
         }
 
         let client = client::UmobileClient::new(&config.username, &config.password).await?;
+        let mut interval = tokio::time::interval(Duration::from_secs(config.interval));
 
         loop {
-            let sleep = tokio::time::sleep(Duration::from_secs(config.interval));
-            if stopper.stop_future(sleep).await.is_none() {
+            if stopper.stop_future(interval.tick()).await.is_none() {
                 break;
             }
 
@@ -93,6 +93,14 @@ async fn fetch_loop(
                     break;
                 }
             };
+
+            tracing::info!(
+                "Fetched usage: data_used={}, call_used={}, sms_used={}, bill={}",
+                usage.mobile_data_used.unwrap_or_default(),
+                usage.call_used.unwrap_or_default(),
+                usage.sms_used.unwrap_or_default(),
+                bill.usage.unwrap_or_default(),
+            );
 
             let mut state = state.write().await;
             state.usage.mobile_data_used = usage.mobile_data_used;
