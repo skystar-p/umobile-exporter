@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
+envy = "0.4.2"
 reqwest = { version = "0.11.18", features = ["multipart", "cookies"] }
 scraper = "0.16.0"
+serde = { version = "1.0.164", features = ["derive"] }
 thiserror = "1.0.40"
 tokio = { version = "1.28.2", features = ["full"] }

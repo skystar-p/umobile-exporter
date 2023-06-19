@@ -27,7 +27,7 @@ pub struct Usage {
 }
 
 impl UmobileClient {
-    pub async fn new_with_id_password(
+    pub async fn new(
         id: impl AsRef<str>,
         password: impl AsRef<str>,
     ) -> Result<Self, ClientError> {
